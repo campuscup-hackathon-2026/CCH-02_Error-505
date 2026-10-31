@@ -9,7 +9,7 @@ _backend_root = Path(__file__).resolve().parents[1]
 
 # Most implementation packages are siblings of ``app`` but are imported by
 # the API using the ``app.*`` namespace.
-for _package in ("core", "db", "services", "middleware", "utils"):
+for _package in ("core", "db", "schemas", "services", "middleware", "utils"):
     sys.modules.setdefault(f"{__name__}.{_package}", importlib.import_module(_package))
 
 # ``models/__init__.py`` imports through ``app.models`` itself, so register its

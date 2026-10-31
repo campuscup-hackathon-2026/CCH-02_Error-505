@@ -74,8 +74,9 @@ class PromptFirewall:
         trust_score = max(0, 100 - trust_penalty - jailbreak_score // 2 - leakage_score // 3)
 
         safety_score = max(0, 100 - score_penalty)
-        risk_level = "critical" if safety_score <= 20 else "high" if safety_score <= 40 else "medium" if safety_score <= 70 else "low"
-        blocked = risk_level in {"critical", "high"} or jailbreak_score >= 20 or leakage_score >= 20
+        has_prompt_injection = any(item["category"] == "prompt_injection" for item in risks)
+        risk_level = "critical" if safety_score <= 20 else "high" if has_prompt_injection or safety_score <= 40 else "medium" if safety_score <= 70 else "low"
+        blocked = has_prompt_injection or risk_level in {"critical", "high"} or jailbreak_score >= 20 or leakage_score >= 20
 
         fallback = {
             "explanation": (

@@ -73,7 +73,7 @@ export default function AppShell({ children }) {
     r.onresult = async (event) => {
       const text = event.results[0][0].transcript;
       try {
-        const { data } = await api.post('/copilot/chat', { message: text });
+        const { data } = await api.post('/copilot/chat', { message: text, provider: 'gemini' });
         // speak response
           const utter = new SpeechSynthesisUtterance(typeof data === 'string' ? data : data?.answer || JSON.stringify(data));
         window.speechSynthesis.speak(utter);

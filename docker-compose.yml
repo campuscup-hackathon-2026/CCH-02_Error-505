@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: sqlite:////data/sentinelai.db
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-before-deployment}
+      FRONTEND_ORIGIN: http://localhost:5173
+    volumes:
+      - sentinel-data:/data
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  sentinel-data:

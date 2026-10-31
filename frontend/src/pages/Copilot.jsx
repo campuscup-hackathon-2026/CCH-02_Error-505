@@ -15,7 +15,7 @@ export default function Copilot() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [provider, setProvider] = useState('auto');
+  const [provider, setProvider] = useState('gemini');
   const chatScrollRef = useRef(null);
 
   function scrollChatToBottom() {
@@ -40,7 +40,7 @@ export default function Copilot() {
         {
           message: userMessage,
           context: { module: 'soc_assistant' },
-          history: nextMessages,
+          history: nextMessages.slice(-8),
           provider,
         },
         { timeout: 60000 }
@@ -72,12 +72,9 @@ export default function Copilot() {
             <button onClick={() => setProvider('azure')} className={`px-3 py-1 rounded border ${provider === 'azure' ? 'border-cyan text-cyan bg-cyan/10' : 'border-white/15 hover:border-cyan/40'}`}>
               Azure OpenAI
             </button>
-            {/* <button onClick={() => setProvider('openai')} className={`px-3 py-1 rounded border ${provider === 'openai' ? 'border-cyan text-cyan bg-cyan/10' : 'border-white/15 hover:border-cyan/40'}`}>
-              OpenAI
-            </button>
             <button onClick={() => setProvider('gemini')} className={`px-3 py-1 rounded border ${provider === 'gemini' ? 'border-cyan text-cyan bg-cyan/10' : 'border-white/15 hover:border-cyan/40'}`}>
               Gemini
-            </button> */}
+            </button>
           </div>
           <div className="flex flex-wrap gap-2">
             {quickCommands.map((cmd) => (

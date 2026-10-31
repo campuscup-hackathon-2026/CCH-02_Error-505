@@ -36,7 +36,7 @@ export function createAlertsSocket(onMessage) {
       ws.close();
       return;
     }
-    ws.send('subscribe');
+    ws.send(JSON.stringify({ token: localStorage.getItem('sentinel_token') }));
   };
 
   ws.onerror = () => {};

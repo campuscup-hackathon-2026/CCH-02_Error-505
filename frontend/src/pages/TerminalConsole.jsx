@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import AppShell from '../components/AppShell';
+import { api } from '../lib/api';
 
 const MAX_LOGS = 50;
 
@@ -19,12 +20,7 @@ export default function TerminalConsole() {
     if (!command.trim()) return;
     setRunning(true);
     try {
-      const res = await fetch('/api/v1/terminal/exec', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command }),
-      });
-      const data = await res.json();
+      const { data } = await api.post('/terminal/exec', { command });
       setOutput((prev) => {
         const next = [...prev, `$ ${command}`, String(data.output || '').trim()].filter(Boolean).slice(-MAX_LOGS);
         return next;

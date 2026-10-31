@@ -74,9 +74,11 @@ export default function Login() {
   return (
     <div
       ref={containerRef}
-      className="min-h-screen w-full fixed inset-0 overflow-hidden"
+      className="min-h-[100dvh] w-full fixed inset-0 overflow-hidden"
       style={{
-        background: '#020812'
+        background: '#020812',
+        minHeight: '100dvh',
+        height: '100dvh'
       }}
     >
       {/* Full-scene cybersecurity background. */}
@@ -87,7 +89,8 @@ export default function Login() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            linear-gradient(90deg, rgba(2, 7, 13, 0.9) 0%, rgba(2, 12, 20, 0.58) 48%, rgba(2, 10, 17, 0.28) 100%)
+            linear-gradient(90deg, rgba(2, 7, 13, 0.66) 0%, rgba(2, 12, 20, 0.18) 48%, rgba(2, 10, 17, 0.4) 100%),
+            linear-gradient(180deg, rgba(2, 7, 13, 0.08), rgba(2, 7, 13, 0.24))
           `,
           zIndex: 0
         }}
@@ -243,14 +246,15 @@ AI ANALYSIS 01011010 00110110`}
         </div>
       </div>
 
-      {/* LEFT SIDE: Login Panel Container */}
+      {/* Centered login panel */}
       <div
         className="auth-form-zone absolute left-1/2 top-0 h-full flex -translate-x-1/2 items-center justify-center pointer-events-none"
         style={{
-          width: '420px',
-          maxWidth: '88vw',
+          width: '100%',
+          maxWidth: '100%',
           zIndex: 10,
-          paddingLeft: 0
+          paddingLeft: 0,
+          paddingTop: 0
         }}
       >
 
@@ -261,31 +265,34 @@ AI ANALYSIS 01011010 00110110`}
           style={{
             background: 'linear-gradient(110deg, rgba(2, 12, 22, .34), rgba(2, 12, 22, .08))',
             border: '1px solid rgba(0, 200, 240, .22)',
-            borderRadius: '14px',
-            padding: '1.0rem 1.0rem',
+            borderRadius: '16px',
+            width: 'min(450px, calc(100% - 32px))',
+            maxWidth: '450px',
+            maxHeight: 'calc(100dvh - 24px)',
+            padding: '18px',
             boxShadow: '0 0 28px rgba(0, 167, 200, .08), inset 0 0 30px rgba(0, 110, 145, .035)',
             animation: 'none'
           }}
         >
           {/* SentinelAI Logo & Branding */}
-          <div className="mb-6 text-left">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="auth-shield" aria-hidden="true"><ShieldCheck size={42} strokeWidth={1.7} /></div>
+          <div className="auth-brand-block text-left">
+            <div className="auth-brand-row flex items-center gap-4">
+              <div className="auth-shield" aria-hidden="true"><ShieldCheck size={52} strokeWidth={1.7} /></div>
               <div>
-                <h1 className="text-3xl font-bold tracking-wide" style={{ color: 'rgba(255, 255, 255, 0.98)' }}>
+                <h1 className="auth-wordmark font-bold tracking-wide" style={{ color: 'rgba(255, 255, 255, 0.98)' }}>
                   <span style={{ color: 'rgba(255, 255, 255, 0.95)' }}>Sentinel</span><span style={{ color: 'rgba(0, 229, 255, 0.95)' }}>AI</span><span style={{ color: 'rgba(242, 247, 250, 0.95)' }}> OS</span>
                 </h1>
-                <p className="mt-1 text-[11px] uppercase tracking-[0.08em]" style={{ color: 'rgba(242, 247, 250, .84)' }}>AI-powered security operating system</p>
+                <p className="auth-brand-caption mt-1 uppercase tracking-[0.08em]" style={{ color: 'rgba(242, 247, 250, .84)' }}>AI-powered security operating system</p>
               </div>
             </div>
             <p
-              className="mt-5 text-xl uppercase tracking-[0.25em] mb-2 font-semibold"
+              className="auth-access-title text-xl uppercase tracking-[0.25em] font-semibold"
               style={{ color: 'rgba(0, 229, 255, 0.9)' }}
             >
               Secure SOC Access
             </p>
             <p
-              className="text-base"
+              className="auth-subtitle text-base"
               style={{ color: 'rgba(200, 200, 200, 0.68)' }}
             >
               Authentication required to continue
@@ -293,7 +300,7 @@ AI ANALYSIS 01011010 00110110`}
           </div>
 
           {/* Input Fields */}
-          <div className="space-y-4 mb-4">
+          <div className="auth-fields space-y-6">
             {/* Email Input */}
             <div>
               <label
@@ -302,7 +309,7 @@ AI ANALYSIS 01011010 00110110`}
               >
                 Username or Email
               </label>
-              <div className="relative"><UserRound size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none" /><input type="email" placeholder="Enter your username or email" value={email} onChange={(e) => setEmail(e.target.value)} required className="auth-input w-full rounded-lg border text-sm transition-all duration-200" /></div>
+              <div className="relative"><UserRound size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none" /><input type="email" autoComplete="username" placeholder="Enter your username or email" value={email} onChange={(e) => setEmail(e.target.value)} required className="auth-input w-full rounded-lg border text-base transition-all duration-200" /></div>
             </div>
 
             {/* Password Input */}
@@ -321,7 +328,7 @@ AI ANALYSIS 01011010 00110110`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="auth-input w-full rounded-lg border text-sm transition-all duration-200"
+                  className="auth-input w-full rounded-lg border text-base transition-all duration-200"
                 />
                 <button
                   type="button"
@@ -351,7 +358,7 @@ AI ANALYSIS 01011010 00110110`}
           )}
 
           {/* Remember & Forgot */}
-          <div className="flex items-center justify-between mb-6 text-xs">
+          <div className="flex items-center justify-between mb-5 text-xs">
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input
                 type="checkbox"
@@ -374,7 +381,7 @@ AI ANALYSIS 01011010 00110110`}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-6 rounded-lg font-bold uppercase tracking-wider flex items-center justify-center gap-3 transition-all duration-300 mb-4 text-sm"
+            className="auth-submit w-full px-6 rounded-lg font-bold uppercase tracking-wider flex items-center justify-center gap-3 transition-all duration-300 mb-4 text-sm"
             style={{
               background: loading
                 ? 'rgba(0, 235, 255, 0.15)'
@@ -383,7 +390,7 @@ AI ANALYSIS 01011010 00110110`}
               border: '1.5px solid rgba(0, 235, 255, 0.42)',
               cursor: loading ? 'not-allowed' : 'pointer',
               boxShadow: '0 0 25px rgba(0, 220, 255, 0.12)',
-              height: '56px'
+              height: '60px'
             }}
             onMouseEnter={(e) => {
               if (!loading) {
@@ -417,7 +424,7 @@ AI ANALYSIS 01011010 00110110`}
 
           {/* Divider */}
           <div
-            className="h-px mb-4"
+            className="h-px mb-3"
             style={{
               background: 'linear-gradient(to right, transparent, rgba(0, 235, 255, 0.15), transparent)'
             }}
@@ -445,7 +452,7 @@ AI ANALYSIS 01011010 00110110`}
 
           {/* Encryption Notice */}
           <p
-            className="text-xs text-center"
+            className="auth-encryption-note text-xs text-center"
             style={{ color: 'rgba(150, 150, 150, 0.6)' }}
           >
             🔒 All connections are encrypted and monitored
@@ -541,11 +548,72 @@ AI ANALYSIS 01011010 00110110`}
           -webkit-text-fill-color: rgba(255, 255, 255, 0.95) !important;
         }
 
+        .auth-login-card {
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+          overflow-y: auto;
+          font-family: Rajdhani, 'Arial Narrow', sans-serif;
+        }
+
+        .auth-brand-block {
+          display: flex;
+          flex-direction: column;
+          margin-bottom: 20px;
+        }
+
+        .auth-brand-row {
+          height: 64px;
+          flex: 0 0 64px;
+          margin-bottom: 20px;
+        }
+
+        .auth-wordmark {
+          font-size: 28px;
+          line-height: 34px;
+          letter-spacing: .015em;
+        }
+
+        .auth-brand-caption {
+          font-size: 11px;
+          line-height: 16px;
+        }
+
+        .auth-access-title {
+          margin: 0 0 4px;
+          font-size: 20px;
+          line-height: 26px;
+        }
+
+        .auth-subtitle {
+          margin: 0;
+          font-size: 14px;
+          line-height: 20px;
+        }
+
+        .auth-fields {
+          margin-bottom: 20px;
+        }
+
+        .auth-fields > :not([hidden]) ~ :not([hidden]) {
+          margin-top: 20px;
+        }
+
+        .auth-encryption-note {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          line-height: 16px;
+        }
+
         .auth-shield {
           display: grid;
           place-items: center;
-          width: 72px;
-          height: 72px;
+          width: 64px;
+          height: 64px;
+          flex: 0 0 64px;
           color: #00e5ff;
           border: 1px solid rgba(0, 229, 255, .26);
           border-radius: 50%;
@@ -557,18 +625,18 @@ AI ANALYSIS 01011010 00110110`}
           position: absolute;
           inset: -2%;
           z-index: 0;
-          background-image: linear-gradient(90deg, rgba(2, 7, 13, .42), rgba(2, 7, 13, .02)), url('/hacker-bg.jpg');
-          background-position: center center;
-          background-size: cover;
-          background-repeat: no-repeat;
-          filter: brightness(.8) contrast(1.12) saturate(1.08);
+          background-image: url('/hacker-bg.jpg'), url('/hacker-bg.svg');
+          background-position: center center, center center;
+          background-size: cover, cover;
+          background-repeat: no-repeat, no-repeat;
+          filter: brightness(.96) contrast(1.08) saturate(1.12);
           transform: translate3d(0, 0, 0);
           will-change: transform;
         }
 
         .auth-input {
-          height: 58px;
-          padding: 0 3.2rem 0 4rem;
+          height: 62px;
+          padding: 0 3.2rem 0 5rem;
           background: rgba(3, 15, 27, .60);
           border-color: rgba(0, 210, 240, .30);
           color: #f2f7fa;
@@ -583,19 +651,35 @@ AI ANALYSIS 01011010 00110110`}
         }
 
         @media (max-width: 1024px) {
-          .auth-form-zone { width: 420px !important; padding-left: 0 !important; }
-          .auth-login-card { padding: 1.75rem 2rem !important; }
+          .auth-login-card { padding: 18px !important; }
         }
 
         @media (max-width: 768px) {
-          .auth-form-zone { width: 100% !important; padding: 1.5rem !important; justify-content: center; }
+          .auth-form-zone { width: 100% !important; padding: 0 !important; justify-content: center; }
           .auth-login-card {
-            width: 90vw !important;
-            max-width: 380px !important;
-            padding: 2.5rem 1.5rem !important;
+            width: min(450px, calc(100vw - 32px)) !important;
+            max-width: 450px !important;
+            max-height: calc(100dvh - 24px);
+            padding: 18px !important;
             background: rgba(2, 12, 22, .58) !important;
           }
           .auth-form-telemetry { left: 5vw; top: 12%; font-size: 9px; line-height: 3.8; }
+        }
+
+        @media (max-width: 480px) {
+          .auth-login-card { padding: 14px !important; }
+          .auth-brand-block { margin-bottom: 16px; }
+          .auth-brand-row { height: 52px; flex-basis: 52px; margin-bottom: 14px; gap: 12px; }
+          .auth-shield { width: 52px; height: 52px; flex-basis: 52px; }
+          .auth-shield svg { width: 32px; height: 32px; }
+          .auth-wordmark { font-size: 24px; line-height: 29px; }
+          .auth-brand-caption { font-size: 8px; line-height: 11px; }
+          .auth-access-title { font-size: 17px; line-height: 22px; }
+          .auth-subtitle { font-size: 13px; line-height: 18px; }
+          .auth-fields { margin-bottom: 16px; }
+          .auth-fields > :not([hidden]) ~ :not([hidden]) { margin-top: 16px; }
+          .auth-input { height: 56px; padding-right: 40px; padding-left: 46px; font-size: 13px; }
+          .auth-submit { height: 54px !important; }
         }
       `}</style>
     </div>

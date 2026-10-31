@@ -29,6 +29,18 @@ export default function IncidentResponse() {
     }
   }
 
+  async function downloadReport() {
+    if (!reportDownload) return;
+    const path = reportDownload.replace(/^\/api\/v1/, '');
+    const { data } = await api.get(path, { responseType: 'blob' });
+    const url = URL.createObjectURL(data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'sentinelai-incident-report.pdf';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <AppShell>
       <div className="space-y-4">
@@ -76,9 +88,9 @@ export default function IncidentResponse() {
                 {loading ? 'Generating report...' : 'Generate Incident PDF'}
               </button>
               {reportDownload ? (
-                <a href={reportDownload} className="px-4 py-2 rounded border border-lime text-lime hover:bg-lime/10">
+                <button onClick={downloadReport} className="px-4 py-2 rounded border border-lime text-lime hover:bg-lime/10">
                   Download Report
-                </a>
+                </button>
               ) : null}
             </div>
           </div>

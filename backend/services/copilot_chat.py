@@ -10,11 +10,11 @@ class SecurityCopilot:
         provider: str | None = None,
     ) -> dict:
         context = context or {}
-        history = history or []
+        history = (history or [])[-8:]
         history_lines = []
         for item in history[-10:]:
             role = item.get("role", "user")
-            content = item.get("content", "")
+            content = item.get("content", "")[:2000]
             if content:
                 history_lines.append(f"{role.title()}: {content}")
 
@@ -37,7 +37,7 @@ class SecurityCopilot:
                 f"Context: {context}"
             ),
             fallback=fallback,
-            provider=provider,
+            provider=provider or "gemini",
         )
 
         status = "ready" if ai_result.get("provider") in {"azure", "openai", "gemini"} else "fallback"

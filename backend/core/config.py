@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     azure_openai_deployment: str | None = None
     azure_openai_api_version: str = "2024-04-01-preview"
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-3.8-flash"
     ollama_base_url: str | None = None
     ollama_model: str = "llama3"
     virustotal_api_key: str | None = None
@@ -68,7 +68,7 @@ class Settings(BaseSettings):
 
     # Resolve the backend/.env file relative to this config file so env vars are loaded
     # reliably even when the process CWD is elsewhere.
-    _env_path = Path(__file__).resolve().parents[2] / ".env"
+    _env_path = Path(__file__).resolve().parents[1] / ".env"
     _load_dotenv_file(_env_path)
     model_config = SettingsConfigDict(
         env_file=str(_env_path), env_file_encoding="utf-8", extra="ignore"

@@ -7,7 +7,9 @@ from typing import Any
 
 try:
     from scapy.all import DNS, IP, IPv6, TCP, UDP, PcapReader
-except ImportError:
+except Exception:
+    # Scapy is an optional runtime dependency and may be unusable in restricted
+    # containers where its per-user config directory cannot be read.
     DNS = IP = IPv6 = TCP = UDP = PcapReader = None
 
 def extract_flows(path: str | Path, idle_timeout: float = 120.0) -> list[dict[str, Any]]:

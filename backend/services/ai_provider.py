@@ -7,31 +7,15 @@ from app.core.config import settings
 
 class AIProvider:
     _azure_timeout_seconds = 30.0
+    _gemini_timeout_seconds = 25.0
 
     def __init__(self) -> None:
         # Defer heavy client initialization until first use to avoid import-time failures.
         self.azure_openai_client = None
         self.openai_client = None
-        self.gemini_model = None
-        self.langchain_openai = None
-        self.langchain_gemini = None
+        self.gemini_client = None
+        self.legacy_gemini_model = None
         self._initialized = False
-
-    @staticmethod
-    def _gemini_model_candidates() -> list[str]:
-        candidates = [
-            settings.gemini_model,
-            "gemini-flash-latest",
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-        ]
-        seen = set()
-        ordered: list[str] = []
-        for candidate in candidates:
-            if candidate and candidate not in seen:
-                seen.add(candidate)
-                ordered.append(candidate)
-        return ordered
 
     @staticmethod
     def _is_azure_openai_v1_endpoint(endpoint: str | None) -> bool:
@@ -97,43 +81,18 @@ class AIProvider:
 
         if settings.gemini_api_key:
             try:
-                import google.generativeai as genai
+                from google import genai
 
-                genai.configure(api_key=settings.gemini_api_key)
-                for model_name in self._gemini_model_candidates():
-                    try:
-                        self.gemini_model = genai.GenerativeModel(model_name)
-                        break
-                    except Exception:
-                        self.gemini_model = None
+                self.gemini_client = genai.Client(api_key=settings.gemini_api_key)
             except Exception:
-                self.gemini_model = None
-
-        try:
-            from langchain_google_genai import ChatGoogleGenerativeAI
-            from langchain_openai import ChatOpenAI
-
-            if chatgpt_key:
+                # Keep compatibility with environments that have not upgraded yet.
                 try:
-                    self.langchain_openai = ChatOpenAI(
-                        api_key=chatgpt_key,
-                        model=settings.openai_model,
-                        temperature=0.2,
-                    )
+                    import google.generativeai as legacy_genai
+
+                    legacy_genai.configure(api_key=settings.gemini_api_key)
+                    self.legacy_gemini_model = legacy_genai.GenerativeModel(settings.gemini_model)
                 except Exception:
-                    self.langchain_openai = None
-            if settings.gemini_api_key:
-                try:
-                    self.langchain_gemini = ChatGoogleGenerativeAI(
-                        google_api_key=settings.gemini_api_key,
-                        model=settings.gemini_model,
-                        temperature=0.2,
-                    )
-                except Exception:
-                    self.langchain_gemini = None
-        except Exception:
-            self.langchain_openai = None
-            self.langchain_gemini = None
+                    self.legacy_gemini_model = None
 
     @staticmethod
     def _extract_json(content: str) -> dict[str, Any] | None:
@@ -166,37 +125,48 @@ class AIProvider:
             parts.append(message)
         return ": ".join(parts)
 
-    @staticmethod
-    def _is_quota_or_rate_limit_error(error: Exception) -> bool:
-        status_code = getattr(error, "status_code", None)
-        code = str(getattr(error, "code", "") or "").lower()
-        message = str(error).lower()
-        return (
-            status_code == 429
-            or "quota" in code
-            or "rate" in code
-            or "quota" in message
-            or "rate limit" in message
-            or "resourceexhausted" in message
-        )
+    async def _generate_gemini_text(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        json_mode: bool = False,
+    ) -> str:
+        if self.gemini_client:
+            from google.genai import types
 
-    async def _complete_with_langchain(self, model: Any, system_prompt: str, user_prompt: str) -> dict[str, Any] | None:
-        try:
-            from langchain_core.messages import HumanMessage, SystemMessage
+            is_gemini_3_or_newer = settings.gemini_model.lower().startswith(("gemini-3", "gemini-4"))
+            config = {
+                "system_instruction": system_prompt,
+                "max_output_tokens": 2048 if json_mode else 1024,
+            }
+            if is_gemini_3_or_newer:
+                # Gemini 3+ rejects sampling overrides; low thinking keeps chat responsive.
+                config["thinking_config"] = types.ThinkingConfig(thinking_level="low")
+            else:
+                config["temperature"] = 0.2
+            if json_mode:
+                config["response_mime_type"] = "application/json"
 
-            response = await asyncio.wait_for(
-                model.ainvoke([SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]),
-                timeout=8.0,
+            response = await self.gemini_client.aio.models.generate_content(
+                model=settings.gemini_model,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(**config),
             )
-            content = getattr(response, "content", "") or ""
-            parsed = self._extract_json(content)
-            if parsed is not None:
-                return parsed
-        except TimeoutError:
-            return None
-        except Exception:
-            return None
-        return None
+        elif self.legacy_gemini_model:
+            generation_config = {}
+            if not settings.gemini_model.lower().startswith(("gemini-3", "gemini-4")):
+                generation_config["temperature"] = 0.2
+            if json_mode:
+                generation_config["response_mime_type"] = "application/json"
+            response = await self.legacy_gemini_model.generate_content_async(
+                f"{system_prompt}\n\n{user_prompt}",
+                generation_config=generation_config,
+            )
+        else:
+            raise RuntimeError("Gemini client is unavailable; check GEMINI_API_KEY and installed SDK")
+
+        return (getattr(response, "text", "") or "").strip()
 
     async def complete_json(
         self,
@@ -252,22 +222,18 @@ class AIProvider:
 
         if requested_provider in {"auto", "gemini"}:
             result = None
-            if self.langchain_gemini:
-                result = await self._complete_with_langchain(self.langchain_gemini, system_prompt, user_prompt)
-            if result is None and self.gemini_model:
-                try:
-                    prompt = (
-                        f"{system_prompt}\n\n"
-                        "Respond ONLY with a valid JSON object.\n"
-                        f"User request:\n{user_prompt}"
-                    )
-                    response = await asyncio.wait_for(self.gemini_model.generate_content_async(prompt), timeout=8.0)
-                    text = response.text.strip()
-                    result = self._extract_json(text)
-                except TimeoutError:
-                    result = None
-                except Exception:
-                    result = None
+            try:
+                content = await asyncio.wait_for(
+                    self._generate_gemini_text(
+                        json_system_prompt,
+                        user_prompt,
+                        json_mode=True,
+                    ),
+                    timeout=self._gemini_timeout_seconds,
+                )
+                result = self._extract_json(content)
+            except Exception:
+                result = None
 
             if result is not None:
                 result.setdefault("provider", "gemini")
@@ -279,9 +245,7 @@ class AIProvider:
 
         if requested_provider in {"auto", "openai"}:
             result = None
-            if self.langchain_openai:
-                result = await self._complete_with_langchain(self.langchain_openai, system_prompt, user_prompt)
-            if result is None and self.openai_client:
+            if self.openai_client:
                 try:
                     response = await asyncio.wait_for(
                         self.openai_client.chat.completions.create(
@@ -375,58 +339,26 @@ class AIProvider:
                 return {"answer": fallback, "provider": "fallback", "reason": "; ".join(failures)}
 
         if requested_provider in {"auto", "gemini"}:
-            if self.langchain_gemini:
-                try:
-                    result = await self._complete_text_with_langchain(self.langchain_gemini, system_prompt, user_prompt)
-                    if result:
-                        return {"answer": result, "provider": "gemini"}
-                except Exception as exc:
-                    failures.append(self._safe_error_summary("Gemini LangChain request failed", exc))
-            elif settings.gemini_api_key:
-                failures.append("Gemini LangChain client unavailable")
-
-            if self.gemini_model:
-                try:
-                    import google.generativeai as genai
-                except Exception:
-                    genai = None
-
-                for model_name in self._gemini_model_candidates():
-                    model = self.gemini_model
-                    if genai is not None and model_name != settings.gemini_model:
-                        model = genai.GenerativeModel(model_name)
-
-                    try:
-                        prompt = f"{system_prompt}\n\n{user_prompt}"
-                        response = await asyncio.wait_for(model.generate_content_async(prompt), timeout=8.0)
-                        text = (getattr(response, "text", "") or "").strip()
-                        if text:
-                            return {"answer": text, "provider": "gemini", "model": model_name}
-                    except TimeoutError:
-                        failures.append(f"Gemini request timed out for {model_name}")
-                    except Exception as exc:
-                        failures.append(self._safe_error_summary(f"Gemini request failed for {model_name}", exc))
-                        if self._is_quota_or_rate_limit_error(exc):
-                            break
-            elif settings.gemini_api_key:
-                failures.append("Gemini client unavailable")
-            else:
+            if not settings.gemini_api_key:
                 failures.append("GEMINI_API_KEY is not configured")
+            else:
+                try:
+                    text = await asyncio.wait_for(
+                        self._generate_gemini_text(system_prompt, user_prompt),
+                        timeout=self._gemini_timeout_seconds,
+                    )
+                    if text:
+                        return {"answer": text, "provider": "gemini", "model": settings.gemini_model}
+                    failures.append("Gemini returned an empty response")
+                except TimeoutError:
+                    failures.append("Gemini request timed out")
+                except Exception as exc:
+                    failures.append(self._safe_error_summary("Gemini request failed", exc))
 
             if requested_provider == "gemini":
                 return {"answer": fallback, "provider": "fallback", "reason": "; ".join(failures)}
 
         if requested_provider in {"auto", "openai"}:
-            if self.langchain_openai:
-                try:
-                    result = await self._complete_text_with_langchain(self.langchain_openai, system_prompt, user_prompt)
-                    if result:
-                        return {"answer": result, "provider": "openai"}
-                except Exception as exc:
-                    failures.append(self._safe_error_summary("OpenAI LangChain request failed", exc))
-            elif settings.chatgpt_api_key or settings.openai_api_key:
-                failures.append("OpenAI LangChain client unavailable")
-
             if self.openai_client:
                 try:
                     response = await asyncio.wait_for(
@@ -454,21 +386,5 @@ class AIProvider:
 
         reason = "; ".join(list(dict.fromkeys(failures))[:3]) or "No AI provider returned a response"
         return {"answer": fallback, "provider": "fallback", "reason": reason}
-
-    async def _complete_text_with_langchain(self, model: Any, system_prompt: str, user_prompt: str) -> str | None:
-        try:
-            from langchain_core.messages import HumanMessage, SystemMessage
-
-            response = await asyncio.wait_for(
-                model.ainvoke([SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]),
-                timeout=8.0,
-            )
-            content = getattr(response, "content", "") or ""
-            return content.strip() or None
-        except TimeoutError:
-            return None
-        except Exception:
-            return None
-
 
 ai_provider = AIProvider()

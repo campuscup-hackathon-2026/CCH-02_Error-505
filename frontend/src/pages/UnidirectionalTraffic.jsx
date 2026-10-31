@@ -48,7 +48,7 @@ export default function UnidirectionalTraffic() {
   useEffect(() => {
     let socket; let retry; let disposed = false;
     const connect = () => { socket = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/v1/ws/unidirectional`);
-    socket.onopen = () => socket.send('subscribe');
+    socket.onopen = () => socket.send(JSON.stringify({ token: localStorage.getItem('sentinel_token') }));
     socket.onmessage = (event) => {
       try { const message = JSON.parse(event.data); if (message.channel === 'unidirectional_update') setData(message.payload); } catch { /* ignore malformed telemetry */ }
     };
